@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Piolas Plans 🌸</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Playfair+Display:ital,wght@0,700;0,800;1,700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff5f8; --surface:#ffffff; --surface2:#fdeef4; --border:#f5c6d6;
+  --pink:#f472a8; --pink-dark:#c94f84; --pink-light:#fce4ef; --pink-soft:#fbcfdf;
+  --coral:#ff7b6b; --mint:#34c9a0; --text:#3a1a2e; --muted:#a07088; --card-r:16px;
+}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+h1,h2,h3{font-family:'Playfair Display',serif}
+
+/* NAV */
+.nav{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(255,245,248,0.96);backdrop-filter:blur(10px);z-index:100;}
+.nav-logo{font-family:'Playfair Display',serif;font-weight:800;font-size:18px;color:var(--pink);cursor:pointer}
+.nav-tabs{display:flex;gap:2px}
+.tab-btn{background:none;border:none;color:var(--muted);font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;padding:6px 12px;border-radius:99px;cursor:pointer;}
+.tab-btn.active{color:#fff;background:var(--pink)}
+
+/* PAGES */
+.page{display:none;padding:20px;max-width:860px;margin:0 auto}
+.page.active{display:block}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--card-r);padding:20px;margin-bottom:14px;position:relative}
+
+/* STAT PILLS */
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.grid-4 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media(min-width: 600px) { .grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; } }
+@media(max-width: 600px) { .grid-3 { grid-template-columns: 1fr; } }
+
+.stat-pill {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  padding: 16px 12px; text-align: center; display: flex; flex-direction: column;
+  justify-content: center; min-height: 90px;
+}
+.stat-num { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 800; color: var(--pink); line-height: 1; }
+.stat-label { font-size: 10px; color: var(--muted); margin-top: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* PLAN ITEMS */
+.plan-item{display:flex;align-items:flex-start;gap:14px;padding:16px;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;margin-bottom:10px;cursor:pointer;transition:all 0.18s;}
+.plan-item.past{opacity:0.6; filter: grayscale(0.8); border-style: dashed;}
+.date-block{background:var(--pink-light);border-radius:10px;padding:8px 12px;text-align:center;min-width:55px}
+.date-day{font-family:'Playfair Display',serif;font-size:22px;font-weight:800;color:var(--pink)}
+
+/* AVATAR STACK */
+.avatar-stack { display: flex; align-items: center; margin-top: 8px; }
+.av-mini { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--surface); margin-left: -8px; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 900; color: white; }
+.av-mini:first-child { margin-left: 0; }
+.av-count { font-size: 11px; color: var(--muted); margin-left: 8px; font-weight: 700; }
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 20px;border-radius:99px;border:none;font-weight:700;font-size:13px;cursor:pointer;transition:all 0.15s}
+.btn-pink{background:var(--pink);color:#fff}
+.btn-ghost{background:var(--surface);color:var(--text);border:1.5px solid var(--border)}
+.btn-danger-light{background:transparent; color:var(--coral); border:1px solid var(--coral); margin-top:10px}
+
+/* MODALS */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(58,26,46,0.4);backdrop-filter:blur(5px);z-index:200;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:28px;width:100%;max-width:400px;position:relative}
+.modal-close{position:absolute; top:15px; right:15px; font-size:24px; cursor:pointer; color:var(--muted); line-height:1}
+
+/* ORACLE */
+.comment-box{background:linear-gradient(135deg,var(--pink-light),rgba(255,220,235,0.4));border:1px solid var(--pink-soft);border-radius:14px;padding:16px 18px 16px 34px;font-style:italic;color:var(--muted);font-size:13px;line-height:1.6;position:relative;margin-bottom:20px;}
+.comment-box::before{content:'"';font-family:'Playfair Display',serif;font-size:48px;color:var(--pink);opacity:0.3;position:absolute;top:-8px;left:10px}
+
+/* AVATARS COLORS */
+.av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800}
+.av-36{width:36px;height:36px;font-size:13px}
+.avc-0{background:#34c9a0; color:white;} .avc-1{background:#f472a8; color:white;} .avc-2{background:#ff7b6b; color:white;} .avc-3{background:#9b7fe8; color:white;} .avc-4{background:#6aaef5; color:white;} .avc-5{background:#f5c842; color:white;} .avc-6{background:#a03870; color:white;} .avc-7{background:#1a8a6a; color:white;} .avc-8{background:#6040b0; color:white;} .avc-9{background:#c06020; color:white;}
+
+.user-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.user-row.me{background:var(--pink-light);margin:0 -8px;padding:10px 8px;border-radius:10px}
+
+.user-dropdown{position:absolute;top:calc(100% + 8px);right:0;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:8px;z-index:150;box-shadow:0 4px 24px rgba(58,26,46,0.12);min-width:180px}
+.user-dropdown a{display:block;padding:9px 14px;font-size:13px;font-weight:700;color:var(--text);text-decoration:none;border-radius:8px;cursor:pointer}
+.user-dropdown a:hover{background:var(--pink-light);color:var(--pink-dark)}
+
+.toast{position:fixed;bottom:24px;right:24px;background:var(--surface);border:2px solid var(--pink);border-radius:14px;padding:12px 18px;font-size:13px;font-weight:700;z-index:400;opacity:0;transition:opacity 0.25s;pointer-events:none;color:var(--pink-dark)}
+.toast.show{opacity:1}
+
+.section-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1.3px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:8px;margin-top:24px}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <nav class="nav">
+    <div class="nav-logo" onclick="showPage('home')">Piolas<span>.</span>Plans 🌸</div>
+    <div style="display:flex;gap:8px">
+      <div class="nav-tabs">
+        <button class="tab-btn active" onclick="showPage('home')" data-page="home">🏠</button>
+        <button class="tab-btn" onclick="showPage('plans')" data-page="plans">📅 Plans</button>
+        <button class="tab-btn" onclick="showPage('stats')" data-page="stats">📊</button>
+      </div>
+      <div class="nav-right" style="position:relative">
+        <div class="nav-user-pill" onclick="toggleUserMenu()" id="nav-user-pill">
+          <div class="av av-36 tag-muted" id="nav-av" style="background:#eee; color:#999">?</div>
+          <span class="uname" id="nav-uname">Convidat</span>
+        </div>
+        <div class="user-dropdown" id="user-dropdown" style="display:none">
+          <div id="dropdown-auth-content"></div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="page active" id="page-home">
+    <h1 id="home-greeting" style="padding:20px 0 10px">Hola!</h1>
+    <div class="section-title">L'Oracle parla</div>
+    <div class="comment-box" id="home-oracle">Tria un usuari per escoltar el veredicte...</div>
+    <div id="home-stats-container" class="grid-4" style="margin-bottom:20px; display:none;"></div>
+    <div id="home-next-plan"></div>
+    <div class="section-title">Rànquing de fiabilitat</div>
+    <div class="card" id="home-ranking"></div>
+    <button class="btn btn-pink" onclick="handleCreatePlanClick()">+ Nou pla</button>
+  </div>
+
+  <div class="page" id="page-plans">
+    <h2 style="padding:20px 0">Agenda del Grup</h2>
+    <div id="plans-list">Carregant plans compartits...</div>
+  </div>
+
+  <div class="page" id="page-stats">
+    <h2 style="padding:20px 0">Estadístiques</h2>
+    <div id="stats-content" class="grid-3" style="margin-bottom:20px"></div>
+    <div class="section-title">Els millors i els pitjors</div>
+    <div id="stats-leaderboard"></div>
+  </div>
+
+  <div class="page" id="page-plan-detail">
+    <button class="btn btn-ghost btn-sm" onclick="showPage('plans')" style="margin-bottom:15px">← Tornar</button>
+    <div id="detail-content"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-select-user">
+  <div class="modal">
+    <span class="modal-close" onclick="closeModal('modal-select-user')">&times;</span>
+    <h2>Qui ets?</h2>
+    <div id="user-select-grid" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top:15px"></div>
+    <button class="btn btn-ghost" style="width:100%; margin-top:20px" onclick="closeModal('modal-select-user')">Cancel·lar</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-create-plan">
+  <div class="modal">
+    <span class="modal-close" onclick="closeModal('modal-create-plan')">&times;</span>
+    <h2>Nou pla 🌟</h2>
+    <input class="btn btn-ghost" style="width:100%; margin:10px 0; text-align:left" id="input-plan-title" placeholder="Quin pla fem?" />
+    <input class="btn btn-ghost" type="date" style="width:100%" id="input-plan-date" />
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:20px">
+      <button class="btn btn-ghost" onclick="closeModal('modal-create-plan')">Cancel·lar</button>
+      <button class="btn btn-pink" onclick="createPlan()">Crear!</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// === CONFIGURACIÓ SUPABASE (LES TEVES CLAUS) ===
+const SUPABASE_URL = "https://hszivduzdidntdgwfqip.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhzeml2ZHV6ZGlkbnRkZ3dmcWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0MDExMDksImV4cCI6MjA5Mjk3NzEwOX0.3HvFfY4mVN4sbJC1D48jcHYyUhtsBPX36LOugiAI6ck";
+const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const INITIAL_USERS = [
+  {id:'laura',  name:'Laura',  colorIdx:0}, {id:'carla',  name:'Carla',  colorIdx:1},
+  {id:'guim',   name:'Guim',   colorIdx:2}, {id:'guiu',   name:'Guiu',   colorIdx:3},
+  {id:'irene',  name:'Irene',  colorIdx:4}, {id:'ivy',    name:'Ivy',    colorIdx:5},
+  {id:'marina', name:'Marina', colorIdx:6}, {id:'paula',  name:'Paula',  colorIdx:7},
+  {id:'sergio', name:'Sergio', colorIdx:8}, {id:'felipe', name:'Felipe', colorIdx:9},
+];
+
+const ORACLE_QUOTES = {
+  high: ["Ets la columna vertebral d'aquest grup.", "Si fessin una estàtua de la puntualitat, tindria la teva cara.", "Apareixes a tot arreu. De vegades fa por."],
+  mid: ["Vens quan pots, i quan no, t'ho perds.", "Ets com el WiFi de l'Estruch: a vegades sí, a vegades no.", "L'Oracle diu que progressis adequadament."],
+  low: ["Se sospita que ets un personatge de ficció.", "T'has plantejat que els plans existeixen fora de WhatsApp?", "Ets el/la fantasma oficial del grup. 👻"],
+  guest: ["Hola, desconegut/da. Tria qui ets per ser jutjat."]
+};
+
+let STATE = {
+  users: INITIAL_USERS,
+  plans: [],
+  currentUserId: localStorage.getItem('pp_current_user') || null
+};
+
+// === FUNCIONS DE DADES (SUPABASE) ===
+async function loadData() {
+  const { data, error } = await _supabase.from('plans').select('*').order('date', { ascending: false });
+  if (error) {
+    console.error("Error carregant plans:", error);
+  } else {
+    STATE.plans = data || [];
+    renderHome();
+    renderPlans();
+    renderStats();
+  }
+}
+
+async function createPlan() {
+  const title = document.getElementById('input-plan-title').value;
+  const date = document.getElementById('input-plan-date').value;
+  if(!title || !date) return toast("Falten dades!");
+  
+  const { error } = await _supabase.from('plans').insert([{ 
+    title, 
+    date, 
+    participants: [STATE.currentUserId] 
+  }]);
+
+  if(error) toast("Error al crear ❌");
+  else {
+    closeModal('modal-create-plan');
+    await loadData();
+    showPage('plans');
+    toast("Pla creat! 🥳");
+  }
+}
+
+async function toggleRSVP(planId) {
+  if(!STATE.currentUserId) return openModal('modal-select-user');
+  const p = STATE.plans.find(p => p.id === planId);
+  let newParticipants = [...(p.participants || [])];
+  
+  if(newParticipants.includes(STATE.currentUserId)) {
+    newParticipants = newParticipants.filter(id => id !== STATE.currentUserId);
+  } else {
+    newParticipants.push(STATE.currentUserId);
+  }
+  
+  const { error } = await _supabase.from('plans').update({ participants: newParticipants }).eq('id', planId);
+  
+  if(error) toast("Error al desar ❌");
+  else {
+    await loadData();
+    openPlanDetail(planId);
+  }
+}
+
+async function deletePlan(id) {
+  if(confirm("Segur que vols eliminar aquest pla?")) {
+    const { error } = await _supabase.from('plans').delete().eq('id', id);
+    if(error) toast("Error al eliminar ❌");
+    else {
+      await loadData();
+      showPage('plans');
+      toast("Pla eliminat 🗑️");
+    }
+  }
+}
+
+// === FUNCIONS DE RENDERITZAT (ESTÈTICA ORIGINAL) ===
+function getStats(userId) {
+  const today = new Date().toISOString().split('T')[0];
+  const past = STATE.plans.filter(p => p.date < today);
+  const attended = past.filter(p => (p.participants || []).includes(userId)).length;
+  const rate = past.length > 0 ? Math.round((attended / past.length) * 100) : 0;
+  return { attended, total: past.length, rate };
+}
+
+function renderHome() {
+  const u = STATE.users.find(u => u.id === STATE.currentUserId);
+  document.getElementById('home-greeting').textContent = u ? `Hola, ${u.name}! 👋` : "Hola, Convidat! 👋";
+  const oracleBox = document.getElementById('home-oracle');
+  const statsContainer = document.getElementById('home-stats-container');
+  if(u) {
+    const s = getStats(u.id);
+    statsContainer.style.display = 'grid';
+    statsContainer.innerHTML = `<div class="stat-pill"><div class="stat-num">${s.rate}%</div><div class="stat-label">Assistència</div></div><div class="stat-pill"><div class="stat-num">${s.attended}</div><div class="stat-label">Plans fets</div></div>`;
+    const pool = s.rate > 80 ? ORACLE_QUOTES.high : (s.rate > 40 ? ORACLE_QUOTES.mid : ORACLE_QUOTES.low);
+    oracleBox.textContent = pool[Math.floor(Math.random() * pool.length)];
+  } else { statsContainer.style.display = 'none'; oracleBox.textContent = ORACLE_QUOTES.guest[0]; }
+
+  const today = new Date().toISOString().split('T')[0];
+  const next = STATE.plans.filter(p => p.date >= today).sort((a,b) => a.date.localeCompare(b.date))[0];
+  const nextDiv = document.getElementById('home-next-plan');
+  nextDiv.innerHTML = next ? `<div class="section-title">Propera cita</div><div class="card card-pink" onclick="openPlanDetail('${next.id}')" style="cursor:pointer"><h3>${next.title}</h3><p>📅 ${next.date}</p></div>` : "";
+
+  const sorted = [...STATE.users].sort((a,b) => getStats(b.id).rate - getStats(a.id).rate);
+  document.getElementById('home-ranking').innerHTML = sorted.slice(0,5).map((user, idx) => {
+    const s = getStats(user.id);
+    return `<div class="user-row ${user.id === STATE.currentUserId ? 'me' : ''}"><div style="font-size:12px; font-weight:800; color:var(--muted); width:20px">${idx+1}</div><div class="av av-36 avc-${user.colorIdx}">${user.name[0]}</div><div style="flex:1; font-weight:700">${user.name}</div><div style="font-weight:800; color:var(--pink-dark)">${s.rate}%</div></div>`;
+  }).join('');
+}
+
+function renderPlans() {
+  const list = document.getElementById('plans-list');
+  const today = new Date().toISOString().split('T')[0];
+  const sorted = [...STATE.plans].sort((a,b) => b.date.localeCompare(a.date));
+  
+  if (STATE.plans.length === 0) {
+    list.innerHTML = "<p style='text-align:center; padding:40px; color:var(--muted)'>Encara no hi ha plans compartits. Crea'n un!</p>";
+    return;
+  }
+
+  list.innerHTML = sorted.map(p => {
+    const parts = (p.participants || []).map(pid => STATE.users.find(u => u.id === pid)).filter(Boolean);
+    const displayedAvatars = parts.slice(0, 5);
+    const extraCount = parts.length - displayedAvatars.length;
+    
+    return `
+    <div class="plan-item ${p.date < today ? 'past' : ''}" onclick="openPlanDetail('${p.id}')">
+      <div class="date-block">
+        <div class="date-day">${p.date.split('-')[2]}</div>
+        <div style="font-size:9px; font-weight:800; text-transform:uppercase">${new Date(p.date).toLocaleString('ca-ES', {month:'short'})}</div>
+      </div>
+      <div style="flex:1">
+        <div style="font-weight:700">${p.title}</div>
+        <div style="font-size:12px; color:var(--muted)">${p.date}</div>
+        <div class="avatar-stack">
+          ${displayedAvatars.map(u => `<div class="av-mini avc-${u.colorIdx}">${u.name[0]}</div>`).join('')}
+          ${extraCount > 0 ? `<div class="av-count">+${extraCount}</div>` : (parts.length > 0 ? `<div class="av-count">${parts.length}</div>` : '')}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderStats() {
+  const today = new Date().toISOString().split('T')[0];
+  const past = STATE.plans.filter(p => p.date < today);
+  const allRates = STATE.users.map(u => getStats(u.id).rate);
+  const avg = allRates.length ? Math.round(allRates.reduce((a,b)=>a+b,0) / allRates.length) : 0;
+  document.getElementById('stats-content').innerHTML = `
+    <div class="stat-pill"><div class="stat-num">${avg}%</div><div class="stat-label">Assistència</div></div>
+    <div class="stat-pill"><div class="stat-num">${past.length}</div><div class="stat-label">Plans Fets</div></div>
+    <div class="stat-pill"><div class="stat-num">${STATE.plans.length - past.length}</div><div class="stat-label">Pendents</div></div>`;
+
+  const sorted = [...STATE.users].sort((a,b) => getStats(b.id).rate - getStats(a.id).rate);
+  const best = sorted[0]; const worst = sorted[sorted.length-1];
+  document.getElementById('stats-leaderboard').innerHTML = `
+    <div class="card" style="border-left: 4px solid var(--mint)">
+      <div style="font-size:10px; font-weight:800; color:var(--mint); margin-bottom:5px">MÉS FIABLE 🦴</div>
+      <div style="display:flex; align-items:center; gap:10px"><div class="av av-36 avc-${best.colorIdx}">${best.name[0]}</div><div style="font-weight:700">${best.name} (${getStats(best.id).rate}%)</div></div>
+    </div>
+    <div class="card" style="border-left: 4px solid var(--coral)">
+      <div style="font-size:10px; font-weight:800; color:var(--coral); margin-bottom:5px">MÉS FANTASMA 👻</div>
+      <div style="display:flex; align-items:center; gap:10px"><div class="av av-36 avc-${worst.colorIdx}">${worst.name[0]}</div><div style="font-weight:700">${worst.name} (${getStats(worst.id).rate}%)</div></div>
+    </div>`;
+}
+
+function openPlanDetail(id) {
+  const p = STATE.plans.find(p => p.id == id); // == per si l'ID ve com a número o string
+  showPage('plan-detail');
+  const participants = p.participants || [];
+  const isGoing = participants.includes(STATE.currentUserId);
+  const today = new Date().toISOString().split('T')[0];
+
+  document.getElementById('detail-content').innerHTML = `
+    <div class="card">
+      <h2 style="margin-bottom:10px">${p.title}</h2>
+      <p style="color:var(--muted); margin-bottom:20px">📅 ${p.date}</p>
+      <div class="section-title">Qui hi va? (${participants.length})</div>
+      <div style="display:flex; gap:8px; margin-bottom:25px; flex-wrap:wrap">
+        ${participants.map(pid => {
+          const u = STATE.users.find(u => u.id === pid);
+          return u ? `<div class="av av-36 avc-${u.colorIdx}" title="${u.name}">${u.name[0]}</div>` : '';
+        }).join('') || "Cap resposta encara..."}
+      </div>
+      ${p.date >= today ? `<button class="btn ${isGoing ? 'btn-ghost' : 'btn-pink'}" style="width:100%" onclick="toggleRSVP('${p.id}')">${isGoing ? 'No hi vaig' : 'Jo hi vaig! ✅'}</button>` : ''}
+      <button class="btn btn-ghost" style="width:100%; border:1px solid var(--coral); color:var(--coral); margin-top:10px" onclick="deletePlan('${p.id}')">🗑️ Eliminar pla</button>
+    </div>`;
+}
+
+// === FUNCIONS DE NAVEGACIÓ I USUARI ===
+function updateNav() {
+  const u = STATE.users.find(u => u.id === STATE.currentUserId);
+  document.getElementById('nav-uname').textContent = u ? u.name : "Convidat";
+  const navAv = document.getElementById('nav-av');
+  navAv.textContent = u ? u.name[0] : "?";
+  navAv.className = u ? `av av-36 avc-${u.colorIdx}` : "av av-36 tag-muted";
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  const btn = document.querySelector(`[data-page="${name}"]`);
+  if(btn) btn.classList.add('active');
+  if(name === 'home') renderHome();
+  if(name === 'plans') renderPlans();
+  if(name === 'stats') renderStats();
+}
+
+function toggleUserMenu() {
+  const d = document.getElementById('user-dropdown');
+  const isOpening = d.style.display === 'none';
+  d.style.display = isOpening ? 'block' : 'none';
+  if (isOpening) {
+    const content = document.getElementById('dropdown-auth-content');
+    content.innerHTML = STATE.currentUserId ? 
+      `<a onclick="openModal('modal-select-user'); closeUserMenu()">🔄 Canviar perfil</a><a onclick="logout()" style="color:var(--coral)">👋 Sortir</a>` :
+      `<a onclick="openModal('modal-select-user'); closeUserMenu()">👤 Triar qui ets</a>`;
+  }
+}
+
+function loginAs(id) { STATE.currentUserId = id; localStorage.setItem('pp_current_user', id); closeModal('modal-select-user'); updateNav(); renderHome(); toast("Perfil carregat! ✨"); }
+function logout() { STATE.currentUserId = null; localStorage.removeItem('pp_current_user'); updateNav(); closeUserMenu(); renderHome(); toast("Sessió tancada 👋"); }
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); if(id === 'modal-create-plan') { document.getElementById('input-plan-title').value = ""; document.getElementById('input-plan-date').value = ""; } }
+function closeUserMenu() { document.getElementById('user-dropdown').style.display = 'none'; }
+function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
+function handleCreatePlanClick() { if(!STATE.currentUserId) { openModal('modal-select-user'); toast("Tria qui ets primer!"); } else openModal('modal-create-plan'); }
+
+document.getElementById('user-select-grid').innerHTML = STATE.users.map(u => `<div class="btn btn-ghost" style="flex-direction:column; padding:15px; height:auto" onclick="loginAs('${u.id}')"><div class="av av-36 avc-${u.colorIdx}">${u.name[0]}</div><div style="font-size:11px; margin-top:5px">${u.name}</div></div>`).join('');
+window.onclick = function(event) { if (!event.target.closest('#nav-user-pill')) closeUserMenu(); }
+
+// Inici
+updateNav();
+loadData();
+</script>
+</body>
+</html>
