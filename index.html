@@ -367,9 +367,13 @@ function openPlanDetail(id) {
           return u ? `<div class="av av-36 avc-${u.colorIdx}" title="${u.name}">${u.name[0]}</div>` : '';
         }).join('') || "Cap resposta encara..."}
       </div>
-      <button class="btn ${isGoing ? 'btn-ghost' : 'btn-pink'}" style="width:100%" onclick="toggleRSVP('${p.id}')">
-  ${isGoing ? 'No hi vaig' : 'Jo hi vaig! ✅'}
-</button>
+     <button class="btn ${isGoing ? 'btn-ghost' : 'btn-pink'}" style="width:100%" onclick="toggleRSVP('${p.id}')">
+        ${isGoing ? 'No hi vaig' : 'Jo hi vaig! ✅'}
+      </button>
+      
+      <button class="btn btn-ghost" style="width:100%; border:1px solid var(--coral); color:var(--coral); margin-top:10px" onclick="deletePlan('${p.id}')">
+        🗑️ Eliminar pla
+      </button>
     </div>`;
 }
 
