@@ -350,8 +350,12 @@ function renderStats() {
 }
 
 function openPlanDetail(id) {
-  const p = STATE.plans.find(p => p.id == id); // == per si l'ID ve com a número o string
+  // Busquem el pla. Supabase fa servir IDs numèrics, així que fem servir == per seguretat
+  const p = STATE.plans.find(p => p.id == id);
+  if (!p) return;
+
   showPage('plan-detail');
+  
   const participants = p.participants || [];
   const isGoing = participants.includes(STATE.currentUserId);
   const today = new Date().toISOString().split('T')[0];
@@ -367,7 +371,8 @@ function openPlanDetail(id) {
           return u ? `<div class="av av-36 avc-${u.colorIdx}" title="${u.name}">${u.name[0]}</div>` : '';
         }).join('') || "Cap resposta encara..."}
       </div>
-     <button class="btn ${isGoing ? 'btn-ghost' : 'btn-pink'}" style="width:100%" onclick="toggleRSVP('${p.id}')">
+      
+      <button class="btn ${isGoing ? 'btn-ghost' : 'btn-pink'}" style="width:100%" onclick="toggleRSVP('${p.id}')">
         ${isGoing ? 'No hi vaig' : 'Jo hi vaig! ✅'}
       </button>
       
@@ -376,6 +381,43 @@ function openPlanDetail(id) {
       </button>
     </div>`;
 }
+
+async function toggleRSVP(planId) {
+  if(!STATE.currentUserId) {
+    openModal('modal-select-user');
+    toast("Tria qui ets primer!");
+    return;
+  }
+
+  // Busquem el pla a l'estat local
+  const p = STATE.plans.find(p => p.id == planId);
+  if (!p) return;
+
+  let newParticipants = [...(p.participants || [])];
+  
+  if(newParticipants.includes(STATE.currentUserId)) {
+    newParticipants = newParticipants.filter(id => id !== STATE.currentUserId);
+  } else {
+    newParticipants.push(STATE.currentUserId);
+  }
+  
+  // Actualitzem a Supabase
+  const { error } = await _supabase
+    .from('plans')
+    .update({ participants: newParticipants })
+    .eq('id', planId);
+  
+  if(error) {
+    console.error("Error Supabase:", error);
+    toast("Error al desar ❌");
+  } else {
+    // Forcem la recàrrega de dades de la base de dades per estar segurs
+    await loadData();
+    // Tornem a dibuixar el detall amb les dades noves
+    openPlanDetail(planId);
+    toast(newParticipants.includes(STATE.currentUserId) ? "T'has apuntat! 🥳" : "T'has desapuntat");
+  }
+
 
 // === FUNCIONS DE NAVEGACIÓ I USUARI ===
 function updateNav() {
