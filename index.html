@@ -170,6 +170,13 @@ const ORACLE_QUOTES = {
 
 let STATE = { users: INITIAL_USERS, plans: [], currentUserId: localStorage.getItem('pp_current_user') || null };
 
+// NOVA FUNCIÓ PER ARREGLAR LA ZONA HORÀRIA:
+function getToday() {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().split('T')[0];
+}
+
 async function loadData() {
   const { data, error } = await _supabase.from('plans').select('*').order('date', { ascending: false });
   if (!error) { STATE.plans = data || []; renderHome(); renderPlans(); renderStats(); }
@@ -208,9 +215,6 @@ function openEditModal(planId) {
     openModal('modal-create-plan');
 }
 
-// ... Mantenim la resta de funcions de l'última versió (toggleRSVP, deletePlan, getStats, renderHome, renderPlans, renderStats) ...
-// Però canviem openPlanDetail per mostrar la imatge:
-
 function openPlanDetail(id) {
   const p = STATE.plans.find(p => p.id == id);
   if (!p) return;
@@ -239,7 +243,6 @@ function openPlanDetail(id) {
     </div>`;
 }
 
-// === LES FUNCIONS DE NAVEGACIÓ QUE JA TENÍEM ===
 async function toggleRSVP(planId) {
   if(!STATE.currentUserId) return openModal('modal-select-user');
   const p = STATE.plans.find(p => p.id == planId);
@@ -256,7 +259,7 @@ async function deletePlan(id) {
   }
 }
 function getStats(userId) {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getToday();
   const past = STATE.plans.filter(p => p.date < today);
   const attended = past.filter(p => (p.participants || []).includes(userId)).length;
   const rate = past.length > 0 ? Math.round((attended / past.length) * 100) : 0;
@@ -274,7 +277,7 @@ function renderHome() {
     const pool = s.rate > 80 ? ORACLE_QUOTES.high : (s.rate > 40 ? ORACLE_QUOTES.mid : ORACLE_QUOTES.low);
     oracleBox.textContent = pool[Math.floor(Math.random() * pool.length)];
   } else { statsContainer.style.display = 'none'; oracleBox.textContent = ORACLE_QUOTES.guest[0]; }
-  const today = new Date().toISOString().split('T')[0];
+  const today = getToday();
   const next = STATE.plans.filter(p => p.date >= today).sort((a,b) => a.date.localeCompare(b.date))[0];
   const nextDiv = document.getElementById('home-next-plan');
   nextDiv.innerHTML = next ? `<div class="section-title">Propera cita</div><div class="card card-pink" onclick="openPlanDetail('${next.id}')" style="cursor:pointer"><h3>${next.title}</h3><p>📅 ${next.date}</p></div>` : "";
@@ -286,7 +289,7 @@ function renderHome() {
 }
 function renderPlans() {
   const list = document.getElementById('plans-list');
-  const today = new Date().toISOString().split('T')[0];
+  const today = getToday();
   const sorted = [...STATE.plans].sort((a,b) => b.date.localeCompare(a.date));
   if (STATE.plans.length === 0) { list.innerHTML = "<p style='text-align:center; padding:40px; color:var(--muted)'>Cap pla.</p>"; return; }
   list.innerHTML = sorted.map(p => {
@@ -297,7 +300,7 @@ function renderPlans() {
   }).join('');
 }
 function renderStats() {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getToday();
   const past = STATE.plans.filter(p => p.date < today);
   const allRates = STATE.users.map(u => getStats(u.id).rate);
   const avg = allRates.length ? Math.round(allRates.reduce((a,b)=>a+b,0) / allRates.length) : 0;
