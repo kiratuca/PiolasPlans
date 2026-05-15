@@ -342,12 +342,14 @@ async function toggleRSVP(planId) {
   const { error } = await _supabase.from('plans').update({ participants: newParticipants }).eq('id', planId);
   if(!error) { await loadData(); openPlanDetail(planId); }
 }
+
 async function deletePlan(id) {
   if(confirm("Segur que vols eliminar aquest pla?")) {
     const { error } = await _supabase.from('plans').delete().eq('id', id);
     if(!error) { await loadData(); showPage('plans'); toast("Pla eliminat 🗑️"); }
   }
 }
+
 function getStats(userId) {
   const today = getToday();
   const past = STATE.plans.filter(p => p.date < today);
@@ -355,6 +357,7 @@ function getStats(userId) {
   const rate = past.length > 0 ? Math.round((attended / past.length) * 100) : 0;
   return { attended, total: past.length, rate };
 }
+
 function renderHome() {
   const u = STATE.users.find(u => u.id === STATE.currentUserId);
   document.getElementById('home-greeting').textContent = u ? `Hola, ${u.name}! 👋` : "Hola, Convidat! 👋";
@@ -377,6 +380,7 @@ function renderHome() {
     return `<div class="user-row ${user.id === STATE.currentUserId ? 'me' : ''}"><div style="font-size:12px; font-weight:800; color:var(--muted); width:20px">${idx+1}</div><div class="av av-36 avc-${user.colorIdx}">${user.name[0]}</div><div style="flex:1; font-weight:700">${user.name}</div><div style="font-weight:800; color:var(--pink-dark)">${s.rate}%</div></div>`;
   }).join('');
 }
+
 function renderPlans() {
   const list = document.getElementById('plans-list');
   const today = getToday();
@@ -389,6 +393,7 @@ function renderPlans() {
     return `<div class="plan-item ${p.date < today ? 'past' : ''}" onclick="openPlanDetail('${p.id}')"><div class="date-block"><div class="date-day">${p.date.split('-')[2]}</div><div style="font-size:9px; font-weight:800; text-transform:uppercase">${new Date(p.date).toLocaleString('ca-ES', {month:'short'})}</div></div><div style="flex:1"><div style="font-weight:700">${p.title}</div><div style="font-size:12px; color:var(--muted)">${p.date}</div><div class="avatar-stack">${disp.map(u => `<div class="av-mini avc-${u.colorIdx}">${u.name[0]}</div>`).join('')}${extra > 0 ? `<div class="av-count">+${extra}</div>` : (parts.length > 0 ? `<div class="av-count">${parts.length}</div>` : '')}</div></div></div>`;
   }).join('');
 }
+
 function renderStats() {
   const today = getToday();
   const past = STATE.plans.filter(p => p.date < today);
@@ -399,6 +404,7 @@ function renderStats() {
   const best = sorted[0]; const worst = sorted[sorted.length-1];
   document.getElementById('stats-leaderboard').innerHTML = `<div class="card" style="border-left: 4px solid var(--mint)"><div style="font-size:10px; font-weight:800; color:var(--mint); margin-bottom:5px">MÉS FIABLE 🦴</div><div style="display:flex; align-items:center; gap:10px"><div class="av av-36 avc-${best.colorIdx}">${best.name[0]}</div><div style="font-weight:700">${best.name} (${getStats(best.id).rate}%)</div></div></div><div class="card" style="border-left: 4px solid var(--coral)"><div style="font-size:10px; font-weight:800; color:var(--coral); margin-bottom:5px">MÉS FANTASMA 👻</div><div style="display:flex; align-items:center; gap:10px"><div class="av av-36 avc-${worst.colorIdx}">${worst.name[0]}</div><div style="font-weight:700">${worst.name} (${getStats(worst.id).rate}%)</div></div></div>`;
 }
+
 function updateNav() {
   const u = STATE.users.find(u => u.id === STATE.currentUserId);
   document.getElementById('nav-uname').textContent = u ? u.name : "Convidat";
@@ -406,16 +412,22 @@ function updateNav() {
   navAv.textContent = u ? u.name[0] : "?";
   navAv.className = u ? `av av-36 avc-${u.colorIdx}` : "av av-36 tag-muted";
 }
+
 function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   const btn = document.querySelector(`[data-page="${name}"]`);
   if(btn) btn.classList.add('active');
+  
+  // Guardem la pestanya a la memòria del navegador
+  localStorage.setItem('pp_current_page', name);
+
   if(name === 'home') renderHome();
   if(name === 'plans') renderPlans();
   if(name === 'stats') renderStats();
 }
+
 function toggleUserMenu() {
   const d = document.getElementById('user-dropdown');
   const isOpening = d.style.display === 'none';
@@ -426,6 +438,7 @@ function toggleUserMenu() {
       `<a onclick="openModal('modal-select-user'); closeUserMenu()">👤 Triar qui ets</a>`;
   }
 }
+
 function loginAs(id) { STATE.currentUserId = id; localStorage.setItem('pp_current_user', id); closeModal('modal-select-user'); updateNav(); renderHome(); toast("Perfil carregat! ✨"); }
 function logout() { STATE.currentUserId = null; localStorage.removeItem('pp_current_user'); updateNav(); closeUserMenu(); renderHome(); toast("Sessió tancada 👋"); }
 function openModal(id) { document.getElementById(id).classList.add('open'); }
@@ -447,8 +460,14 @@ function handleCreatePlanClick() { if(!STATE.currentUserId) { openModal('modal-s
 document.getElementById('user-select-grid').innerHTML = STATE.users.map(u => `<div class="btn btn-ghost" style="flex-direction:column; padding:15px; height:auto" onclick="loginAs('${u.id}')"><div class="av av-36 avc-${u.colorIdx}">${u.name[0]}</div><div style="font-size:11px; margin-top:5px">${u.name}</div></div>`).join('');
 window.onclick = function(event) { if (!event.target.closest('#nav-user-pill')) closeUserMenu(); }
 
+// Inicialització
 updateNav();
 loadData();
+
+// Llegeix quina pestanya estava oberta per defecte, o va a la "home"
+const savedPage = localStorage.getItem('pp_current_page') || 'home';
+showPage(savedPage);
+
 </script>
 </body>
 </html>
