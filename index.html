@@ -60,10 +60,12 @@ h1,h2,h3{font-family:'Playfair Display',serif}
 .section-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1.3px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:8px;margin-top:24px}
 .section-title::after{content:'';flex:1;height:1px;background:var(--border)}
 
-/* NOUS ESTILS PER A LA GALERIA */
+/* GALERIA I FOTOS */
 .event-photo { width: 100%; height: 200px; object-fit: cover; border-radius: 12px; margin-bottom: 15px; border: 1px solid var(--border); }
 .gallery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
+.gallery-item-wrapper { position: relative; }
 .gallery-item { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; }
+.delete-photo-btn { position: absolute; top: 4px; right: 4px; background: rgba(255,255,255,0.9); border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; border: 1px solid var(--border); color: var(--coral); z-index: 10; }
 .upload-loading { font-size: 11px; color: var(--pink); font-weight: 700; margin-bottom: 10px; display: none; }
 textarea.btn-ghost { font-family: inherit; font-size: 13px; padding: 12px; height: 60px; resize: none; text-align: left; }
 </style>
@@ -133,9 +135,9 @@ textarea.btn-ghost { font-family: inherit; font-size: 13px; padding: 12px; heigh
     <textarea class="btn btn-ghost" id="input-plan-desc" style="width:100%; margin-bottom:10px" placeholder="Descripció (opcional)"></textarea>
     <input class="btn btn-ghost" style="width:100%; margin-bottom:10px; text-align:left" id="input-plan-img" placeholder="URL de la foto de portada (opcional)" />
     
-    <div id="upload-section" style="margin-top:10px; border-top: 1px solid var(--border); padding-top:15px;">
+    <div id="upload-section" style="margin-top:10px; border-top: 1px solid var(--border); padding-top:15px; display:none;">
         <div class="section-title">Afegir fotos de record</div>
-        <div id="upload-loading" class="upload-loading">Pujant foto... ⏳</div>
+        <div id="upload-loading" class="upload-loading">Comprimint i pujant... ⏳</div>
         <input type="file" id="file-input" style="display:none" accept="image/*" onchange="handleFileSelect(event)">
         <button class="btn btn-ghost" style="width:100%" onclick="document.getElementById('file-input').click()">📷 Seleccionar foto del mòbil</button>
     </div>
@@ -172,10 +174,10 @@ const INITIAL_USERS = [
 ];
 
 const ORACLE_QUOTES = {
-  high: ["MVPs dels Piolas!", "Sense tu, el grup estaria mort.", "Fins i tot vas als plans que no existeixen."],
-  mid: ["Pots fer-ho millor, surt del sofà!", "A vegades sí, a vegades no... l'equilibri.", "L'Oracle et vigila, apunta't a un més."],
-  low: ["Segur que ets del grup?", "Ets un holograma o una persona real?", "T'has plantejat venir algun dia? 👻"],
-  guest: ["Hola, desconegut/da. Tria qui ets."]
+  high: ["Ets la columna vertebral d'aquest grup.", "Si fessin una estàtua de la puntualitat, tindria la teva cara.", "Apareixes a tot arreu. De vegades fa por.", "Sense tu, això seria un grup de WhatsApp mort.", "Tens un 10 en assistència. L'Oracle et fa una reverència.", "Fins i tot vas als plans que encara no s'han inventat.", "El teu segon nom és 'Jo m'apunto'.", "Ets el MVP dels Piolas.", "Si els plans fossin una religió, tu series el Papa."],
+  mid: ["Vens quan pots, i quan no, t'ho perds.", "Ets com el WiFi de l'Estruch: a vegades sí, a vegades no.", "L'Oracle diu que progressis adequadament.", "Ni fred ni calor. A l'Oracle li agradaria veure't més.", "A vegades hi ets, a vegades ets un mite.", "Tens la síndrome del 'depèn de la mandra que em faci'.", "Pots fer-ho millor. L'Oracle sap que la manta tira molt, però surt de casa.", "Estàs a la corda fluixa de l'amistat. Tria: sofà o Piolas?", "Véns prou per no ser un fantasma."],
+  low: ["Se sospita que ets un personatge de ficció.", "T'has plantejat que els plans existeixen fora de WhatsApp?", "Ets el/la fantasma oficial del grup. 👻", "Aquest perfil té menys activitat que un videoclub.", "Hi ha llegendes urbanes més reals que la teva presència.", "L'Oracle es pregunta si has emigrat.", "Quan t'apuntes a un pla, la gent demana un desig.", "Ets com un eclipsi: et veiem un cop cada 10 anys.", "Segur que ets del grup? L'Oracle té dubtes raonables."],
+  guest: ["Hola, desconegut/da. Tria qui ets per ser jutjat."]
 };
 
 let STATE = { users: INITIAL_USERS, plans: [], currentUserId: localStorage.getItem('pp_current_user') || null };
@@ -191,40 +193,69 @@ async function loadData() {
   if (!error) { STATE.plans = data || []; renderHome(); renderPlans(); renderStats(); }
 }
 
-// LOGICA DE PUJADA DE FOTOS
+// COMPRESSOR D'IMATGES
+async function compressImage(file) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                const MAX_SIZE = 1200;
+                if (width > height && width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
+                else if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+                canvas.width = width; canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                canvas.toBlob((blob) => {
+                    resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+                }, 'image/jpeg', 0.7);
+            };
+        };
+    });
+}
+
 async function handleFileSelect(event) {
-    const file = event.target.files[0];
+    const originalFile = event.target.files[0];
     const planId = document.getElementById('edit-plan-id').value;
-    if(!file) return;
-    if(!planId) return toast("Primer desa el pla abans de pujar records!");
+    if(!originalFile || !planId) return;
 
     const loader = document.getElementById('upload-loading');
     loader.style.display = 'block';
 
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${planId}/${Date.now()}.${fileExt}`;
+    const file = await compressImage(originalFile);
+    const fileName = `${planId}/${Date.now()}.jpg`;
 
     const { data, error } = await _supabase.storage.from('event-photos').upload(fileName, file);
 
-    if(error) {
-        toast("Error pujant la foto ❌");
-        console.error(error);
-    } else {
+    if(!error) {
         const { data: { publicUrl } } = _supabase.storage.from('event-photos').getPublicUrl(fileName);
-        
-        // Actualitzem la llista de fotos a la DB
         const p = STATE.plans.find(p => p.id == planId);
-        const currentGallery = p.gallery || [];
-        const newGallery = [...currentGallery, publicUrl];
-
-        const { error: dbError } = await _supabase.from('plans').update({ gallery: newGallery }).eq('id', planId);
-        
-        if(!dbError) {
-            toast("Foto de record guardada! 📸");
-            await loadData();
-        }
+        const newGallery = [...(p.gallery || []), publicUrl];
+        await _supabase.from('plans').update({ gallery: newGallery }).eq('id', planId);
+        toast("Foto de record guardada! 📸");
+        await loadData();
     }
     loader.style.display = 'none';
+}
+
+async function deleteGalleryPhoto(planId, photoUrl) {
+    if(!confirm("Segur que vols esborrar aquest record?")) return;
+    const p = STATE.plans.find(p => p.id == planId);
+    const newGallery = p.gallery.filter(url => url !== photoUrl);
+    
+    const { error } = await _supabase.from('plans').update({ gallery: newGallery }).eq('id', planId);
+    if(!error) {
+        const path = photoUrl.split('/public/event-photos/')[1];
+        if(path) await _supabase.storage.from('event-photos').remove([path]);
+        toast("Foto esborrada 🗑️");
+        await loadData();
+        openPlanDetail(planId);
+    }
 }
 
 async function savePlanAction() {
@@ -237,11 +268,11 @@ async function savePlanAction() {
     if(!title || !date) return toast("Falten dades!");
 
     if(id) {
-        const { error } = await _supabase.from('plans').update({ title, date, description, image_url }).eq('id', id);
-        if(!error) toast("Pla actualitzat! ✨");
+        await _supabase.from('plans').update({ title, date, description, image_url }).eq('id', id);
+        toast("Pla actualitzat! ✨");
     } else {
-        const { error } = await _supabase.from('plans').insert([{ title, date, description, image_url, gallery: [], participants: [STATE.currentUserId] }]);
-        if(!error) toast("Pla creat! 🥳");
+        await _supabase.from('plans').insert([{ title, date, description, image_url, gallery: [], participants: [STATE.currentUserId] }]);
+        toast("Pla creat! 🥳");
     }
     closeModal('modal-create-plan');
     await loadData();
@@ -276,9 +307,14 @@ function openPlanDetail(id) {
       ${p.description ? `<p style="font-size:14px; background:var(--bg); padding:12px; border-radius:10px; margin-bottom:20px">${p.description}</p>` : ''}
       
       ${gallery.length > 0 ? `
-        <div class="section-title">Records compartits 📸</div>
+        <div class="section-title">fotitos de la quedada 📸</div>
         <div class="gallery-grid">
-            ${gallery.map(url => `<img src="${url}" class="gallery-item" onclick="window.open('${url}')">`).join('')}
+            ${gallery.map(url => `
+                <div class="gallery-item-wrapper">
+                    <span class="delete-photo-btn" onclick="deleteGalleryPhoto(${p.id}, '${url}')">×</span>
+                    <img src="${url}" class="gallery-item" onclick="window.open('${url}')">
+                </div>
+            `).join('')}
         </div>
       ` : ''}
 
@@ -297,7 +333,6 @@ function openPlanDetail(id) {
     </div>`;
 }
 
-// RESTA DE FUNCIONS (toggleRSVP, deletePlan, getStats, renderHome, renderPlans, renderStats, Nav)
 async function toggleRSVP(planId) {
   if(!STATE.currentUserId) return openModal('modal-select-user');
   const p = STATE.plans.find(p => p.id == planId);
@@ -417,4 +452,3 @@ loadData();
 </script>
 </body>
 </html>
-
