@@ -7,7 +7,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Playfair+Display:ital,wght@0,700;0,800;1,700&display=swap" rel="stylesheet">
 <style>
-/* ... Mantenim tot el CSS anterior ... */
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#fff5f8; --surface:#ffffff; --surface2:#fdeef4; --border:#f5c6d6;
@@ -61,8 +60,11 @@ h1,h2,h3{font-family:'Playfair Display',serif}
 .section-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1.3px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:8px;margin-top:24px}
 .section-title::after{content:'';flex:1;height:1px;background:var(--border)}
 
-/* NOUS ESTILS PER A FOTOS */
+/* NOUS ESTILS PER A LA GALERIA */
 .event-photo { width: 100%; height: 200px; object-fit: cover; border-radius: 12px; margin-bottom: 15px; border: 1px solid var(--border); }
+.gallery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
+.gallery-item { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; }
+.upload-loading { font-size: 11px; color: var(--pink); font-weight: 700; margin-bottom: 10px; display: none; }
 textarea.btn-ghost { font-family: inherit; font-size: 13px; padding: 12px; height: 60px; resize: none; text-align: left; }
 </style>
 </head>
@@ -129,10 +131,18 @@ textarea.btn-ghost { font-family: inherit; font-size: 13px; padding: 12px; heigh
     <input class="btn btn-ghost" style="width:100%; margin:10px 0; text-align:left" id="input-plan-title" placeholder="Quin pla fem?" />
     <input class="btn btn-ghost" type="date" style="width:100%; margin-bottom:10px" id="input-plan-date" />
     <textarea class="btn btn-ghost" id="input-plan-desc" style="width:100%; margin-bottom:10px" placeholder="Descripció (opcional)"></textarea>
-    <input class="btn btn-ghost" style="width:100%; margin-bottom:10px; text-align:left" id="input-plan-img" placeholder="URL de la foto (opcional)" />
+    <input class="btn btn-ghost" style="width:100%; margin-bottom:10px; text-align:left" id="input-plan-img" placeholder="URL de la foto de portada (opcional)" />
+    
+    <div id="upload-section" style="margin-top:10px; border-top: 1px solid var(--border); padding-top:15px;">
+        <div class="section-title">Afegir fotos de record</div>
+        <div id="upload-loading" class="upload-loading">Pujant foto... ⏳</div>
+        <input type="file" id="file-input" style="display:none" accept="image/*" onchange="handleFileSelect(event)">
+        <button class="btn btn-ghost" style="width:100%" onclick="document.getElementById('file-input').click()">📷 Seleccionar foto del mòbil</button>
+    </div>
+
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:20px">
       <button class="btn btn-ghost" onclick="closeModal('modal-create-plan')">Cancel·lar</button>
-      <button class="btn btn-pink" id="btn-save-plan" onclick="savePlanAction()">Crear!</button>
+      <button class="btn btn-pink" id="btn-save-plan" onclick="savePlanAction()">Desar</button>
     </div>
   </div>
 </div>
@@ -162,45 +172,14 @@ const INITIAL_USERS = [
 ];
 
 const ORACLE_QUOTES = {
-  high: [
-    "Ets la columna vertebral d'aquest grup.",
-    "Si fessin una estàtua de la puntualitat, tindria la teva cara.",
-    "Apareixes a tot arreu. De vegades fa por.",
-    "Sense tu, això seria un grup de WhatsApp mort.",
-    "Tens un 10 en assistència. L'Oracle et fa una reverència.",
-    "Fins i tot vas als plans que encara no s'han inventat.",
-    "El teu segon nom és 'Jo m'apunto'.",
-    "Ets el MVP dels Piolas. No canviïs mai, l'agenda et necessita.",
-    "Si els plans fossin una religió, tu series el Papa."
-  ],
-  mid: [
-    "Vens quan pots, i quan no, t'ho perds.",
-    "Ets com el WiFi de l'Estruch: a vegades sí, a vegades no.",
-    "L'Oracle diu que progressis adequadament.",
-    "Ni fred ni calor. A l'Oracle li agradaria veure't més.",
-    "A vegades hi ets, a vegades ets un mite.",
-    "Tens la síndrome del 'depèn de la mandra que em faci'.",
-    "Pots fer-ho millor. L'Oracle sap que la manta tira molt, però surt de casa.",
-    "Estàs a la corda fluixa de l'amistat. Tria: sofà o Piolas?",
-    "Véns prou per no ser un fantasma, però tampoc et donarem un premi."
-  ],
-  low: [
-    "Se sospita que ets un personatge de ficció.",
-    "T'has plantejat que els plans existeixen fora de WhatsApp?",
-    "Ets el/la fantasma oficial del grup. 👻",
-    "Aquest perfil té menys activitat que un videoclub.",
-    "Hi ha llegendes urbanes més reals que la teva presència física.",
-    "L'Oracle es pregunta si has emigrat i no ens ho has dit.",
-    "Quan t'apuntes a un pla, la gent demana un desig.",
-    "Ets com un eclipsi: et veiem un cop cada 10 anys.",
-    "Segur que ets del grup? L'Oracle té dubtes raonables."
-  ],
-  guest: ["Hola, desconegut/da. Tria qui ets per ser jutjat."]
+  high: ["MVPs dels Piolas!", "Sense tu, el grup estaria mort.", "Fins i tot vas als plans que no existeixen."],
+  mid: ["Pots fer-ho millor, surt del sofà!", "A vegades sí, a vegades no... l'equilibri.", "L'Oracle et vigila, apunta't a un més."],
+  low: ["Segur que ets del grup?", "Ets un holograma o una persona real?", "T'has plantejat venir algun dia? 👻"],
+  guest: ["Hola, desconegut/da. Tria qui ets."]
 };
 
 let STATE = { users: INITIAL_USERS, plans: [], currentUserId: localStorage.getItem('pp_current_user') || null };
 
-// NOVA FUNCIÓ PER ARREGLAR LA ZONA HORÀRIA:
 function getToday() {
   const d = new Date();
   d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
@@ -210,6 +189,42 @@ function getToday() {
 async function loadData() {
   const { data, error } = await _supabase.from('plans').select('*').order('date', { ascending: false });
   if (!error) { STATE.plans = data || []; renderHome(); renderPlans(); renderStats(); }
+}
+
+// LOGICA DE PUJADA DE FOTOS
+async function handleFileSelect(event) {
+    const file = event.target.files[0];
+    const planId = document.getElementById('edit-plan-id').value;
+    if(!file) return;
+    if(!planId) return toast("Primer desa el pla abans de pujar records!");
+
+    const loader = document.getElementById('upload-loading');
+    loader.style.display = 'block';
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${planId}/${Date.now()}.${fileExt}`;
+
+    const { data, error } = await _supabase.storage.from('event-photos').upload(fileName, file);
+
+    if(error) {
+        toast("Error pujant la foto ❌");
+        console.error(error);
+    } else {
+        const { data: { publicUrl } } = _supabase.storage.from('event-photos').getPublicUrl(fileName);
+        
+        // Actualitzem la llista de fotos a la DB
+        const p = STATE.plans.find(p => p.id == planId);
+        const currentGallery = p.gallery || [];
+        const newGallery = [...currentGallery, publicUrl];
+
+        const { error: dbError } = await _supabase.from('plans').update({ gallery: newGallery }).eq('id', planId);
+        
+        if(!dbError) {
+            toast("Foto de record guardada! 📸");
+            await loadData();
+        }
+    }
+    loader.style.display = 'none';
 }
 
 async function savePlanAction() {
@@ -225,7 +240,7 @@ async function savePlanAction() {
         const { error } = await _supabase.from('plans').update({ title, date, description, image_url }).eq('id', id);
         if(!error) toast("Pla actualitzat! ✨");
     } else {
-        const { error } = await _supabase.from('plans').insert([{ title, date, description, image_url, participants: [STATE.currentUserId] }]);
+        const { error } = await _supabase.from('plans').insert([{ title, date, description, image_url, gallery: [], participants: [STATE.currentUserId] }]);
         if(!error) toast("Pla creat! 🥳");
     }
     closeModal('modal-create-plan');
@@ -241,7 +256,7 @@ function openEditModal(planId) {
     document.getElementById('input-plan-date').value = p.date;
     document.getElementById('input-plan-desc').value = p.description || "";
     document.getElementById('input-plan-img').value = p.image_url || "";
-    document.getElementById('btn-save-plan').innerText = "Desar canvis";
+    document.getElementById('upload-section').style.display = 'block';
     openModal('modal-create-plan');
 }
 
@@ -251,6 +266,7 @@ function openPlanDetail(id) {
   showPage('plan-detail');
   const participants = p.participants || [];
   const isGoing = participants.includes(STATE.currentUserId);
+  const gallery = p.gallery || [];
   
   document.getElementById('detail-content').innerHTML = `
     <div class="card">
@@ -258,6 +274,14 @@ function openPlanDetail(id) {
       <h2 style="margin-bottom:5px">${p.title}</h2>
       <p style="color:var(--muted); margin-bottom:10px">📅 ${p.date}</p>
       ${p.description ? `<p style="font-size:14px; background:var(--bg); padding:12px; border-radius:10px; margin-bottom:20px">${p.description}</p>` : ''}
+      
+      ${gallery.length > 0 ? `
+        <div class="section-title">Records compartits 📸</div>
+        <div class="gallery-grid">
+            ${gallery.map(url => `<img src="${url}" class="gallery-item" onclick="window.open('${url}')">`).join('')}
+        </div>
+      ` : ''}
+
       <div class="section-title">Qui hi va? (${participants.length})</div>
       <div style="display:flex; gap:8px; margin-bottom:25px; flex-wrap:wrap">
         ${participants.map(pid => {
@@ -267,12 +291,13 @@ function openPlanDetail(id) {
       </div>
       <button class="btn ${isGoing ? 'btn-ghost' : 'btn-pink'}" style="width:100%" onclick="toggleRSVP('${p.id}')">${isGoing ? 'No hi vaig' : 'Jo hi vaig! ✅'}</button>
       <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px">
-        <button class="btn btn-ghost" onclick="openEditModal('${p.id}')">✏️ Editar</button>
+        <button class="btn btn-ghost" onclick="openEditModal('${p.id}')">✏️ Editar / Fotos</button>
         <button class="btn btn-ghost" style="border-color:var(--coral); color:var(--coral)" onclick="deletePlan('${p.id}')">🗑️ Eliminar</button>
       </div>
     </div>`;
 }
 
+// RESTA DE FUNCIONS (toggleRSVP, deletePlan, getStats, renderHome, renderPlans, renderStats, Nav)
 async function toggleRSVP(planId) {
   if(!STATE.currentUserId) return openModal('modal-select-user');
   const p = STATE.plans.find(p => p.id == planId);
@@ -376,8 +401,9 @@ function closeModal(id) {
   document.getElementById('input-plan-date').value = "";
   document.getElementById('input-plan-desc').value = "";
   document.getElementById('input-plan-img').value = "";
+  document.getElementById('upload-section').style.display = 'none';
   document.getElementById('modal-plan-header').innerText = "Nou pla 🌟";
-  document.getElementById('btn-save-plan').innerText = "Crear!";
+  document.getElementById('btn-save-plan').innerText = "Desar";
 }
 function closeUserMenu() { document.getElementById('user-dropdown').style.display = 'none'; }
 function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
@@ -391,3 +417,11 @@ loadData();
 </script>
 </body>
 </html>
+
+### Com pujar fotos ara:
+1.  **Primer crea el pla** (o entra a un de ja creat).
+2.  Clica a **✏️ Editar / Fotos**.
+3.  Veuràs el botó de **📷 Seleccionar foto**.
+4.  Tria la foto del mòbil, espera 2 segons (sortirà "Pujant foto...") i quan acabi, ja la tindràs a la secció de "Records" del detall del pla.
+
+**A gaudir dels records!** Si vols que fem que les fotos es puguin esborrar de la galeria o que l'Oracle faci bromes sobre les fotos pujades, m'ho dius!
