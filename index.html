@@ -293,8 +293,16 @@ function openEditModal(planId) {
 
 function openPlanDetail(id) {
   const p = STATE.plans.find(p => p.id == id);
-  if (!p) return;
+  if (!p) {
+      // Per si la persona refresca i el pla ja no existeix
+      showPage('plans');
+      return;
+  }
+  
+  // Guardem l'ID del pla a la memòria perquè sobrevisqui a un refresc
+  localStorage.setItem('pp_current_plan_id', id);
   showPage('plan-detail');
+  
   const participants = p.participants || [];
   const isGoing = participants.includes(STATE.currentUserId);
   const gallery = p.gallery || [];
@@ -460,14 +468,21 @@ function handleCreatePlanClick() { if(!STATE.currentUserId) { openModal('modal-s
 document.getElementById('user-select-grid').innerHTML = STATE.users.map(u => `<div class="btn btn-ghost" style="flex-direction:column; padding:15px; height:auto" onclick="loginAs('${u.id}')"><div class="av av-36 avc-${u.colorIdx}">${u.name[0]}</div><div style="font-size:11px; margin-top:5px">${u.name}</div></div>`).join('');
 window.onclick = function(event) { if (!event.target.closest('#nav-user-pill')) closeUserMenu(); }
 
-// Inicialització
+// Inicialització asíncrona segura
 updateNav();
-loadData();
-
-// Llegeix quina pestanya estava oberta per defecte, o va a la "home"
-const savedPage = localStorage.getItem('pp_current_page') || 'home';
-showPage(savedPage);
-
+loadData().then(() => {
+  const savedPage = localStorage.getItem('pp_current_page') || 'home';
+  if (savedPage === 'plan-detail') {
+    const savedPlanId = localStorage.getItem('pp_current_plan_id');
+    if (savedPlanId) {
+      openPlanDetail(savedPlanId);
+    } else {
+      showPage('plans');
+    }
+  } else {
+    showPage(savedPage);
+  }
+});
 </script>
 </body>
 </html>
