@@ -5,13 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Piolas Plans 🌸</title>
   
-  <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<!-- Color de la bateria i l'hora de dalt -->
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<!-- Nom que sortirà a sota de la icona al mòbil -->
 <meta name="apple-mobile-web-app-title" content="Piolas">
-<!-- La icona de la teva App! -->
 <link rel="apple-touch-icon" href="https://hszivduzdidntdgwfqip.supabase.co/storage/v1/object/public/event-photos/cover%20(1).png">
   
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -91,8 +88,9 @@ textarea.btn-ghost { font-family: inherit; font-size: 13px; padding: 12px; heigh
         <button class="tab-btn" onclick="showPage('plans')" data-page="plans">📅 Plans</button>
         <button class="tab-btn" onclick="showPage('stats')" data-page="stats">📊</button>
       </div>
-      <div class="nav-right" style="position:relative">
-        <div class="nav-user-pill" onclick="toggleUserMenu()" id="nav-user-pill">
+      <div class="nav-right" style="position:relative; display:flex; align-items:center; gap:12px;">
+        <button onclick="forceRefresh()" style="background:none; border:none; cursor:pointer; font-size:16px; color:var(--muted);" title="Actualitzar dades">🔄</button>
+        <div class="nav-user-pill" onclick="toggleUserMenu()" id="nav-user-pill" style="display:flex; align-items:center; gap:8px;">
           <div class="av av-36 tag-muted" id="nav-av" style="background:#eee; color:#999">?</div>
           <span class="uname" id="nav-uname">Convidat</span>
         </div>
@@ -130,7 +128,7 @@ textarea.btn-ghost { font-family: inherit; font-size: 13px; padding: 12px; heigh
   </div>
 
   <div class="page" id="page-plan-detail">
-    <button class="btn btn-ghost btn-sm" onclick="showPage('plans')" style="margin-bottom:15px">← Tornar</button>
+    <button class="btn btn-ghost btn-sm" onclick="goBack()" style="margin-bottom:15px">← Tornar</button>
     <div id="detail-content"></div>
   </div>
 </div>
@@ -201,6 +199,11 @@ function getToday() {
 async function loadData() {
   const { data, error } = await _supabase.from('plans').select('*').order('date', { ascending: false });
   if (!error) { STATE.plans = data || []; renderHome(); renderPlans(); renderStats(); }
+}
+
+async function forceRefresh() {
+  toast("Actualitzant... 🔄");
+  await loadData();
 }
 
 // COMPRESSOR D'IMATGES
@@ -301,15 +304,18 @@ function openEditModal(planId) {
     openModal('modal-create-plan');
 }
 
+function goBack() {
+    const prev = localStorage.getItem('pp_previous_page') || 'plans';
+    showPage(prev);
+}
+
 function openPlanDetail(id) {
   const p = STATE.plans.find(p => p.id == id);
   if (!p) {
-      // Per si la persona refresca i el pla ja no existeix
       showPage('plans');
       return;
   }
   
-  // Guardem l'ID del pla a la memòria perquè sobrevisqui a un refresc
   localStorage.setItem('pp_current_plan_id', id);
   showPage('plan-detail');
   
@@ -432,13 +438,17 @@ function updateNav() {
 }
 
 function showPage(name) {
+  const currentActive = document.querySelector('.page.active');
+  if (currentActive && currentActive.id !== 'page-plan-detail' && name === 'plan-detail') {
+    localStorage.setItem('pp_previous_page', currentActive.id.replace('page-', ''));
+  }
+
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   const btn = document.querySelector(`[data-page="${name}"]`);
   if(btn) btn.classList.add('active');
   
-  // Guardem la pestanya a la memòria del navegador
   localStorage.setItem('pp_current_page', name);
 
   if(name === 'home') renderHome();
