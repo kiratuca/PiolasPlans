@@ -51,10 +51,13 @@ h1,h2,h3{font-family:'Playfair Display',serif}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 20px;border-radius:99px;border:none;font-weight:700;font-size:13px;cursor:pointer;transition:all 0.15s}
 .btn-pink{background:var(--pink);color:#fff}
 .btn-ghost{background:var(--surface);color:var(--text);border:1.5px solid var(--border)}
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(58,26,46,0.4);backdrop-filter:blur(5px);z-index:200;align-items:center;justify-content:center;padding:20px}
+
+/* MODAL MILLORAT PER A MÒBILS (PERMET SCROLL) */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(58,26,46,0.4);backdrop-filter:blur(5px);z-index:200;align-items:flex-start;justify-content:center;padding:20px;padding-top:10vh;overflow-y:auto;}
 .modal-overlay.open{display:flex}
-.modal{background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:28px;width:100%;max-width:400px;position:relative}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:28px;width:100%;max-width:400px;position:relative;margin-bottom:10vh;}
 .modal-close{position:absolute; top:15px; right:15px; font-size:24px; cursor:pointer; color:var(--muted); line-height:1}
+
 .comment-box{background:linear-gradient(135deg,var(--pink-light),rgba(255,220,235,0.4));border:1px solid var(--pink-soft);border-radius:14px;padding:16px 18px 16px 34px;font-style:italic;color:var(--muted);font-size:13px;line-height:1.6;position:relative;margin-bottom:20px;}
 .comment-box::before{content:'"';font-family:'Playfair Display',serif;font-size:48px;color:var(--pink);opacity:0.3;position:absolute;top:-8px;left:10px}
 .av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800}
@@ -77,16 +80,34 @@ h1,h2,h3{font-family:'Playfair Display',serif}
 .gallery-item { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; }
 .delete-photo-btn { position: absolute; top: 4px; right: 4px; background: rgba(255,255,255,0.9); border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; border: 1px solid var(--border); color: var(--coral); z-index: 10; }
 .upload-loading { font-size: 11px; color: var(--pink); font-weight: 700; margin-bottom: 10px; display: none; }
-textarea.btn-ghost { font-family: inherit; font-size: 13px; padding: 12px; height: 60px; resize: none; text-align: left; }
+
+/* NOUS CAMPS DE FORMULARI CORRECTES PER MÒBIL */
+.input-field {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--surface);
+  margin-bottom: 12px;
+  box-sizing: border-box;
+  display: block; /* Evita errors d'amplada a iOS */
+  outline: none;
+  -webkit-appearance: none;
+}
+.input-field:focus { border-color: var(--pink); }
+textarea.input-field { resize: none; height: 80px; }
 
 /* BOTÓ FLOTANT DE REFRESCAR */
 .refresh-fab {
   position: absolute;
-  top: 75px; /* Una mica per sota de la barra de navegació */
+  top: 75px; 
   right: 20px;
   background: var(--surface);
   border: 1.5px solid var(--border);
-  box-shadow: 0 4px 12px rgba(244,114,168,0.15); /* Ombra rosa suau */
+  box-shadow: 0 4px 12px rgba(244,114,168,0.15);
   border-radius: 50%;
   width: 38px;
   height: 38px;
@@ -113,7 +134,7 @@ textarea.btn-ghost { font-family: inherit; font-size: 13px; padding: 12px; heigh
         <button class="tab-btn" onclick="showPage('stats')" data-page="stats">📊</button>
       </div>
       <div class="nav-right" style="position:relative">
-        <div class="nav-user-pill" onclick="toggleUserMenu()" id="nav-user-pill">
+        <div class="nav-user-pill" onclick="toggleUserMenu()" id="nav-user-pill" style="display:flex; align-items:center; gap:8px;">
           <div class="av av-36 tag-muted" id="nav-av" style="background:#eee; color:#999">?</div>
           <span class="uname" id="nav-uname">Convidat</span>
         </div>
@@ -162,12 +183,14 @@ textarea.btn-ghost { font-family: inherit; font-size: 13px; padding: 12px; heigh
 <div class="modal-overlay" id="modal-create-plan">
   <div class="modal">
     <span class="modal-close" onclick="closeModal('modal-create-plan')">&times;</span>
-    <h2 id="modal-plan-header">Nou pla 🌟</h2>
+    <h2 id="modal-plan-header" style="margin-bottom:15px">Nou pla 🌟</h2>
     <input type="hidden" id="edit-plan-id">
-    <input class="btn btn-ghost" style="width:100%; margin:10px 0; text-align:left" id="input-plan-title" placeholder="Quin pla fem?" />
-    <input class="btn btn-ghost" type="date" style="width:100%; margin-bottom:10px" id="input-plan-date" />
-    <textarea class="btn btn-ghost" id="input-plan-desc" style="width:100%; margin-bottom:10px" placeholder="Descripció (opcional)"></textarea>
-    <input class="btn btn-ghost" style="width:100%; margin-bottom:10px; text-align:left" id="input-plan-img" placeholder="URL de la foto de portada (opcional)" />
+    
+    <!-- Es canvien tots els 'btn-ghost' per la nova classe 'input-field' -->
+    <input class="input-field" id="input-plan-title" placeholder="Quin pla fem?" />
+    <input class="input-field" type="date" id="input-plan-date" />
+    <textarea class="input-field" id="input-plan-desc" placeholder="Descripció (opcional)"></textarea>
+    <input class="input-field" id="input-plan-img" placeholder="URL de la foto de portada (opcional)" />
     
     <div id="upload-section" style="margin-top:10px; border-top: 1px solid var(--border); padding-top:15px; display:none;">
         <div class="section-title">Afegir fotos de record</div>
